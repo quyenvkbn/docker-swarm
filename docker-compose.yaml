@@ -1,11 +1,19 @@
 version: '3.8'
-networks:
+networks: #Tạo network
   web-overlay-network:
     driver: overlay
 volumes: # Tạo volumn
   nginx:
     name: volumn_nginx
     driver: local
+configs:
+  nginx_site_config: #Tên config
+    file: ./nginx/nginx-site.conf #file trên host
+secrets:
+  ssl_certificate:
+    file: ./secrets/fullchain.pem
+  ssl_key:
+    file: ./secrets/privkey.pem
 services:
   web:
     image: nginx:latest
@@ -15,24 +23,29 @@ services:
     volumes:
       - nginx:/var/log/nginx #sử dụng volume được tạo ở trên
     networks:
-      - web-overlay-network
+      - web-overlay-network #sử dụng network được tạo ở trên
     deploy:
       replicas: 2 # Thiết lập số lượng bản sao là 2
+      resources:
+        limits:
+          cpus: '0.5'  # Giới hạn CPU là 0.5 (50% của một CPU)
+          memory: 512M  # Giới hạn bộ nhớ là 512MB
+        reservations:
+          cpus: '0.25'  # Đặt trước 25% CPU
+          memory: 256M  # Đặt trước 256MB bộ nhớ
+      update_config: 
+        parallelism: 2  # Cập nhật hai container cùng lúc
+        delay: 10s  # Chờ 10 giây giữa mỗi nhóm cập nhật
+        failure_action: rollback  # Rollback nếu cập nhật thất bại
+        monitor: 30s  # Thời gian giám sát mỗi cập nhật
+        max_failure_ratio: 0.1  # Tỷ lệ lỗi tối đa cho phép (10%)
+      restart_policy:
+        condition: on-failure  # Restart nếu container gặp lỗi
     configs:
-      - source: nginx_site_config
-        target: /etc/nginx/conf.d/default.conf
+      - source: nginx_site_config #Sử dụng tên config
+        target: /etc/nginx/conf.d/default.conf #mount file vào container
     secrets:
       - source: ssl_certificate
         target: /etc/letsencrypt/live/quyenvk.click/fullchain.pem
       - source: ssl_key
         target: /etc/letsencrypt/live/quyenvk.click/privkey.pem
-
-configs:
-  nginx_site_config:
-    file: ./nginx/nginx-site.conf
-
-secrets:
-  ssl_certificate:
-    file: ./secrets/fullchain.pem
-  ssl_key:
-    file: ./secrets/privkey.pem
