@@ -1,0 +1,38 @@
+version: '3.8'
+networks:
+  web-overlay-network:
+    driver: overlay
+volumes: # Tạo volumn
+  nginx:
+    name: volumn_nginx
+    driver: local
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginx:/var/log/nginx #sử dụng volume được tạo ở trên
+    networks:
+      - web-overlay-network
+    deploy:
+      replicas: 2 # Thiết lập số lượng bản sao là 2
+    configs:
+      - source: nginx_site_config
+        target: /etc/nginx/conf.d/default.conf
+    secrets:
+      - source: ssl_certificate
+        target: /etc/letsencrypt/live/quyenvk.click/fullchain.pem
+      - source: ssl_key
+        target: /etc/letsencrypt/live/quyenvk.click/privkey.pem
+
+configs:
+  nginx_site_config:
+    file: ./nginx/nginx-site.conf
+
+secrets:
+  ssl_certificate:
+    file: ./secrets/fullchain.pem
+  ssl_key:
+    file: ./secrets/privkey.pem
