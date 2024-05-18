@@ -6,14 +6,6 @@ volumes: # Tạo volumn
   nginx:
     name: volumn_nginx
     driver: local
-configs:
-  nginx_site_config: #Tên config
-    file: ./nginx/nginx-site.conf #file trên host
-secrets:
-  ssl_certificate:
-    file: ./secrets/fullchain.pem
-  ssl_key:
-    file: ./secrets/privkey.pem
 services:
   web:
     image: nginx:latest
@@ -45,11 +37,3 @@ services:
         constraints:
           - node.role == worker #Chỉ triển khai trên các worker node
 #          - node.labels.region == us-west #Chỉ triển khai trên các node có label bằng us-west
-    configs:
-      - source: nginx_site_config #Sử dụng tên config
-        target: /etc/nginx/conf.d/default.conf #mount file vào container
-    secrets:
-      - source: ssl_certificate
-        target: /etc/letsencrypt/live/quyenvk.click/fullchain.pem
-      - source: ssl_key
-        target: /etc/letsencrypt/live/quyenvk.click/privkey.pem
